@@ -1,11 +1,27 @@
 extern crate pkg_config;
+#[cfg(target_env = "msvc")]
+extern crate vcpkg;
 
 use std::env;
 use std::path::Path;
 use std::process::Command;
 
+#[cfg(target_env = "msvc")]
+fn vcpkg_probe_libmongoc() -> bool {
+    vcpkg::find_package("mongo-c-driver").unwrap();
+    true
+}
+
+#[cfg(not(target_env = "msvc"))]
+fn vcpkg_probe_libmongoc() -> bool {
+    false
+}
 
 fn main() {
+    if vcpkg_probe_libmongoc() {
+        return;
+    }
+
     let mongoc_version = env!("CARGO_PKG_VERSION")
         .split('-')
         .next()
