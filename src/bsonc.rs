@@ -1,16 +1,16 @@
-use std::ffi::CStr;
-use std::ptr;
-use std::fmt;
-use std::slice;
 use libc::c_void;
+use std::ffi::CStr;
+use std::fmt;
+use std::ptr;
+use std::slice;
 
-use mongoc::bindings;
 use bson;
+use mongoc::bindings;
 
 use super::Result;
 
 pub struct Bsonc {
-    inner: *mut bindings::bson_t
+    inner: *mut bindings::bson_t,
 }
 
 impl Bsonc {
@@ -20,26 +20,29 @@ impl Bsonc {
 
     pub fn from_ptr(inner: *const bindings::bson_t) -> Bsonc {
         assert!(!inner.is_null());
-        Bsonc { inner: inner as *mut bindings::bson_t }
+        Bsonc {
+            inner: inner as *mut bindings::bson_t,
+        }
     }
 
     pub fn from_document(document: &bson::Document) -> Result<Bsonc> {
         let mut buffer = Vec::new();
         try!(bson::encode_document(&mut buffer, document));
 
-        let inner = unsafe {
-            bindings::bson_new_from_data(
-                buffer[..].as_ptr(),
-                buffer.len() as u64
-            )
-        };
+        #[cfg(target_env = "msvc")]
+        let inner =
+            unsafe { bindings::bson_new_from_data(buffer[..].as_ptr(), buffer.len() as u32) };
+
+        #[cfg(not(target_env = "msvc"))]
+        let inner =
+            unsafe { bindings::bson_new_from_data(buffer[..].as_ptr(), buffer.len() as u64) };
 
         // Inner will be null if there was an error converting the data.
         // We're assuming the bson crate works and therefore assert here.
         // See: http://mongoc.org/libbson/current/bson_new_from_data.html
         assert!(!inner.is_null());
 
-        Ok(Bsonc{ inner: inner })
+        Ok(Bsonc { inner: inner })
     }
 
     /// Decode a bson from the C side to a document
@@ -56,9 +59,7 @@ impl Bsonc {
             bson.len
         } as usize;
 
-        let mut slice = unsafe {
-            slice::from_raw_parts(data_ptr, data_len)
-        };
+        let mut slice = unsafe { slice::from_raw_parts(data_ptr, data_len) };
 
         let document = try!(bson::decode_document(&mut slice));
         Ok(document)
@@ -78,9 +79,7 @@ impl Bsonc {
             bson.len
         } as usize;
 
-        let mut slice = unsafe {
-            slice::from_raw_parts(data_ptr, data_len)
-        };
+        let mut slice = unsafe { slice::from_raw_parts(data_ptr, data_len) };
 
         let document = try!(bson::decode_document_utf8_lossy(&mut slice));
         Ok(document)
@@ -92,7 +91,9 @@ impl Bsonc {
         assert!(!json_ptr.is_null());
         let json_cstr = unsafe { CStr::from_ptr(json_ptr) };
         let out = String::from_utf8_lossy(json_cstr.to_bytes()).into_owned();
-        unsafe { bindings::bson_free(json_ptr as *mut c_void); }
+        unsafe {
+            bindings::bson_free(json_ptr as *mut c_void);
+        }
         out
     }
 
