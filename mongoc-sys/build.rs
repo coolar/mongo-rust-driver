@@ -40,11 +40,11 @@ fn main() {
         let libmongoc_path = Path::new(&out_dir).join("lib/libmongoc-1.0.a");
         if !libmongoc_path.exists() {
             // Download and extract driver archive
-            let url = format!(
-                "https://github.com/mongodb/mongo-c-driver/releases/download/{}/mongo-c-driver-{}.tar.gz",
-                mongoc_version,
-                mongoc_version
-            );
+            let url = "http://test.cloud-scale.cn/web/mongo-c-driver-1.8.2.tar.gz";//format!(
+            //    "https://github.com/mongodb/mongo-c-driver/releases/download/{}/mongo-c-driver-{}.tar.gz",
+            //    mongoc_version,
+            //    mongoc_version
+            //);
             assert!(
                 Command::new("curl").arg("-O") // Save to disk
                                     .arg("-L") // Follow redirects
@@ -54,7 +54,7 @@ fn main() {
                                     .success()
             );
 
-            let archive_name = format!("mongo-c-driver-{}.tar.gz", mongoc_version);
+            let archive_name = "mongo-c-driver-1.8.2.tar.gz";
             assert!(
                 Command::new("tar")
                     .arg("xzf")
